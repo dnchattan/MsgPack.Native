@@ -12,28 +12,53 @@
 #include <fstream>
 #pragma comment(lib,"comsuppw.lib")
 
-typedef BSTR (WINAPI* ParseMethod)(const char*,int);
+typedef BSTR(WINAPI* ParseMethod)(const char*, int);
+typedef HRESULT(WINAPI* ConvertToJsonBuf)(const char*, int, const char*, size_t*);
+
+#define BUFFER_SIZE (1024 * 1024 * 5)
 
 int main()
 {
-   HMODULE msgPackDll { LoadLibrary(L"MsgPack.Native.dll") };
-   if (!msgPackDll) return 1;
+	HMODULE msgPackDll { LoadLibrary(L"MsgPack.Native.dll") };
+	if (!msgPackDll) return 1;
+
+	const std::string inputFile = "ByteBufferRaw";
+	std::ifstream infile(inputFile, std::ios_base::binary);
+	std::vector<char> buffer { std::istreambuf_iterator<char>(infile),
+		std::istreambuf_iterator<char>() };
+
 #ifdef _DEBUG
-   ParseMethod Parse { (ParseMethod) GetProcAddress(msgPackDll, "ConvertToJson_DEBUG") };
-#else
-   ParseMethod Parse { (ParseMethod) GetProcAddress(msgPackDll, "ConvertToJson") };
+	{
+		std::cout << "ConvertToJson_DEBUG" << "\n";
+		ParseMethod Parse { (ParseMethod) GetProcAddress(msgPackDll, "ConvertToJson_DEBUG") };
+		BSTR result { Parse(buffer.data(), buffer.size()) };
+		const std::string stdstr(_bstr_t(result, true));
+		std::cout << stdstr.substr(0, 500).c_str() << "\n";
+	}
 #endif
-   if (!Parse) return 1;
-
-
-   const std::string inputFile = "ByteBufferRaw";
-   std::ifstream infile(inputFile, std::ios_base::binary);
-
-   std::vector<char> buffer { std::istreambuf_iterator<char>(infile),
-      std::istreambuf_iterator<char>() };
-   BSTR result { Parse(buffer.data(), buffer.size()) };
-   const std::string stdstr(_bstr_t(result, true));
-   std::cout << stdstr.c_str() << "\n";
+	{
+		std::cout << "ConvertToJson" << "\n";
+		ParseMethod Parse { (ParseMethod) GetProcAddress(msgPackDll, "ConvertToJson") };
+		BSTR result { Parse(buffer.data(), buffer.size()) };
+		const std::string stdstr(_bstr_t(result, true));
+		std::cout << stdstr.substr(0, 500).c_str() << "\n";
+	}
+	{
+		std::cout << "ConvertToJsonBuf" << "\n";
+		char* buf { nullptr };
+		size_t cBuf { 0 };
+		ConvertToJsonBuf Parse { (ConvertToJsonBuf) GetProcAddress(msgPackDll, "ConvertToJsonBuf") };
+		HRESULT result { Parse(buffer.data(), buffer.size(), buf, &cBuf) };
+		std::cout << "HRESULT(0): " << result << "\n";
+		buf = reinterpret_cast<char*>(malloc(cBuf));
+		memset(buf, 0, cBuf);
+		result = Parse(buffer.data(), buffer.size(), buf, &cBuf);
+		std::cout << "HRESULT(1): " << result << "\n";
+		const std::string stdstr{ buf, cBuf };
+		std::cout << stdstr.substr(0,500).c_str() << "\n";
+		free(buf);
+	}
+	return 0;
 }
 
 // Run program: Ctrl + F5 or Debug > Start Without Debugging menu
