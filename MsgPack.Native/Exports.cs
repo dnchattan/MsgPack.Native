@@ -24,20 +24,19 @@ namespace MsgPack.Native
 		}
 
 		[DllExport(CallingConvention = CallingConvention.StdCall)]
-		public static uint ConvertToJsonBuf(IntPtr pBytes, int cBytes, IntPtr pOutBytes, ref IntPtr cOutBytes)
+		public static unsafe int ConvertToJsonBuf(IntPtr pBytes, int cBytes, IntPtr pOutBytes, int cOutBytes)
 		{
 			byte[] data = new byte[cBytes];
 			Marshal.Copy(pBytes, data, 0, cBytes);
 			string result = MessagePackSerializer.ConvertToJson(data);
 			byte[] outBytes = Encoding.UTF8.GetBytes(result);
-			if (outBytes.Length > (int)cOutBytes)
+			if (outBytes.Length > cOutBytes)
 			{
-				cOutBytes = (IntPtr)outBytes.Length;
-				return E_InvalidArg;
+				Marshal.Copy(outBytes, 0, pOutBytes, cOutBytes);
+				return outBytes.Length;
 			}
-			cOutBytes = (IntPtr)outBytes.Length;
 			Marshal.Copy(outBytes, 0, pOutBytes, outBytes.Length);
-			return S_OK;
+			return 0;
 		}
 
 #if DEBUG
