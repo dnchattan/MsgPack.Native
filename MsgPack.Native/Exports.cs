@@ -24,7 +24,7 @@ namespace MsgPack.Native
 		}
 
 		[DllExport(CallingConvention = CallingConvention.StdCall)]
-		public static unsafe int ConvertToJsonBuf(IntPtr pBytes, int cBytes, IntPtr pOutBytes, int cOutBytes)
+		public static int ConvertToJsonBuf(IntPtr pBytes, int cBytes, IntPtr pOutBytes, int cOutBytes)
 		{
 			byte[] data = new byte[cBytes];
 			Marshal.Copy(pBytes, data, 0, cBytes);
