@@ -7,6 +7,9 @@
 #include <comutil.h>
 #include <iostream>
 #include <string>
+#include <vector>
+#include <istream>
+#include <fstream>
 #pragma comment(lib,"comsuppw.lib")
 
 typedef BSTR (WINAPI* ParseMethod)(const char*,int);
@@ -15,12 +18,20 @@ int main()
 {
    HMODULE msgPackDll { LoadLibrary(L"MsgPack.Native.dll") };
    if (!msgPackDll) return 1;
-
+#ifdef _DEBUG
+   ParseMethod Parse { (ParseMethod) GetProcAddress(msgPackDll, "ConvertToJson_DEBUG") };
+#else
    ParseMethod Parse { (ParseMethod) GetProcAddress(msgPackDll, "ConvertToJson") };
+#endif
    if (!Parse) return 1;
 
-   const char* data{"foobar"};
-   BSTR result { Parse(data, 6) };
+
+   const std::string inputFile = "ByteBufferRaw";
+   std::ifstream infile(inputFile, std::ios_base::binary);
+
+   std::vector<char> buffer { std::istreambuf_iterator<char>(infile),
+      std::istreambuf_iterator<char>() };
+   BSTR result { Parse(buffer.data(), buffer.size()) };
    const std::string stdstr(_bstr_t(result, true));
    std::cout << stdstr.c_str() << "\n";
 }
