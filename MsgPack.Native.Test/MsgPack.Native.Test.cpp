@@ -13,7 +13,7 @@
 #pragma comment(lib,"comsuppw.lib")
 
 typedef BSTR(WINAPI* ParseMethod)(const char*, int);
-typedef HRESULT(WINAPI* ConvertToJsonBuf)(const char*, int, const char*, size_t*);
+typedef int(WINAPI* ConvertToJsonBuf)(const char*, int, const char*, int);
 
 #define BUFFER_SIZE (1024 * 1024 * 5)
 
@@ -48,12 +48,13 @@ int main()
 		char* buf { nullptr };
 		size_t cBuf { 0 };
 		ConvertToJsonBuf Parse { (ConvertToJsonBuf) GetProcAddress(msgPackDll, "ConvertToJsonBuf") };
-		HRESULT result { Parse(buffer.data(), buffer.size(), buf, &cBuf) };
-		std::cout << "HRESULT(0): " << result << "\n";
+		int result { Parse(buffer.data(), buffer.size(), buf, cBuf) };
+		std::cout << "result(0): " << result << "\n";
+		cBuf = result;
 		buf = reinterpret_cast<char*>(malloc(cBuf));
 		memset(buf, 0, cBuf);
-		result = Parse(buffer.data(), buffer.size(), buf, &cBuf);
-		std::cout << "HRESULT(1): " << result << "\n";
+		result = Parse(buffer.data(), buffer.size(), buf, cBuf);
+		std::cout << "result(1): " << result << "\n";
 		const std::string stdstr{ buf, cBuf };
 		std::cout << stdstr.substr(0,500).c_str() << "\n";
 		free(buf);

@@ -32,7 +32,6 @@ namespace MsgPack.Native
 			byte[] outBytes = Encoding.UTF8.GetBytes(result);
 			if (outBytes.Length > cOutBytes)
 			{
-				Marshal.Copy(outBytes, 0, pOutBytes, cOutBytes);
 				return outBytes.Length;
 			}
 			Marshal.Copy(outBytes, 0, pOutBytes, outBytes.Length);
